@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  COLLECTOR
+  PROCUREMENT
+  ADMIN
+}
+
+enum PointType {
+  STATIONARY
+  MOBILE
+}
+
+enum DealStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  NONE
+  STUBBED_PAID
+}
+
+model User {
+  id            String   @id @default(cuid())
+  phone         String   @unique
+  role          UserRole
+  name          String
+  // Procurement-only fields
+  orgName       String?
+  inn           String?
+  email         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  stocks            Stock[]
+  procurementPoints ProcurementPoint[]
+  dealsAsCollector  Deal[]             @relation("CollectorDeals")
+  routes            Route[]
+}
+
+model SmsCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model RawMaterial {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  photoUrl      String?
+  composition   String?
+  benefits      String?
+  seasonStart   String?
+  seasonEnd     String?
+  harvestGuide  String?
+  gostReference String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  fields         Field[]
+  stocks         Stock[]
+  purchasePlans  PurchasePlan[]
+  deals          Deal[]
+}
+
+model Region {
+  id        String   @id @default(cuid())
+  name      String
+  district  String?
+  createdAt DateTime @default(now())
+
+  fields ProcurementPoint[]
+  routes Route[]
+  fieldSites Field[]
+}
+
+model Field {
+  id            String   @id @default(cuid())
+  name          String
+  latitude      Float
+  longitude     Float
+  hasRoute      Boolean  @default(false)
+  region        Region   @relation(fields: [regionId], references: [id])
+  regionId      String
+  rawMaterial   RawMaterial @relation(fields: [rawMaterialId], references: [id])
+  rawMaterialId String
+  createdAt     DateTime @default(now())
+
+  routes Route[]
+}
+
+model Route {
+  id          String   @id @default(cuid())
+  name        String
+  field       Field    @relation(fields: [fieldId], references: [id])
+  fieldId     String
+  region      Region   @relation(fields: [regionId], references: [id])
+  regionId    String
+  distanceKm  Float?
+  durationMin Int?
+  trackGeoJson Json?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdById String?
+  createdAt   DateTime @default(now())
+}
+
+model Stock {
+  id            String      @id @default(cuid())
+  collector     User        @relation(fields: [collectorId], references: [id])
+  collectorId   String
+  rawMaterial   RawMaterial @relation(fields: [rawMaterialId], references: [id])
+  rawMaterialId String
+  quantityKg    Float
+  collectedAt   DateTime    @default(now())
+  fieldLatitude  Float?
+  fieldLongitude Float?
+  createdAt     DateTime    @default(now())
+
+  deals Deal[]
+}
+
+model ProcurementPoint {
+  id          String    @id @default(cuid())
+  owner       User      @relation(fields: [ownerId], references: [id])
+  ownerId     String
+  name        String
+  address     String
+  phone       String
+  workingHours String
+  photoUrl    String?
+  type        PointType @default(STATIONARY)
+  region      Region    @relation(fields: [regionId], references: [id])
+  regionId    String
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  purchasePlans PurchasePlan[]
+  deals         Deal[]
+}
+
+model PurchasePlan {
+  id                 String           @id @default(cuid())
+  procurementPoint   ProcurementPoint @relation(fields: [procurementPointId], references: [id])
+  procurementPointId String
+  rawMaterial        RawMaterial      @relation(fields: [rawMaterialId], references: [id])
+  rawMaterialId      String
+  volumeKg           Float
+  pricePerKg         Float
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model Deal {
+  id                 String           @id @default(cuid())
+  number             Int              @default(autoincrement())
+  collector          User             @relation("CollectorDeals", fields: [collectorId], references: [id])
+  collectorId        String
+  procurementPoint   ProcurementPoint @relation(fields: [procurementPointId], references: [id])
+  procurementPointId String
+  rawMaterial        RawMaterial      @relation(fields: [rawMaterialId], references: [id])
+  rawMaterialId      String
+  stock              Stock?           @relation(fields: [stockId], references: [id])
+  stockId            String?
+  quantityKg         Float
+  pricePerKg         Float
+  amount             Float
+  status             DealStatus       @default(PENDING)
+  paymentStatus      PaymentStatus    @default(NONE)
+  qrToken            String           @unique @default(cuid())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  completedAt        DateTime?
+}
+
+model FireSafetyTest {
+  id        String              @id @default(cuid())
+  title     String
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  questions FireSafetyQuestion[]
+}
+
+model FireSafetyQuestion {
+  id           String         @id @default(cuid())
+  test         FireSafetyTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  testId       String
+  text         String
+  options      Json
+  correctIndex Int
+  order        Int            @default(0)
+}
+
+model VideoContent {
+  id          String   @id @default(cuid())
+  title       String
+  url         String
+  description String?
+  createdAt   DateTime @default(now())
+}

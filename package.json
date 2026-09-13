@@ -1,0 +1,16 @@
+{
+  "name": "sibir",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace=apps/server",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "dev:web": "npm run dev --workspace=apps/web-app",
+    "prisma:generate": "npm run prisma:generate --workspace=apps/server",
+    "prisma:migrate": "npm run prisma:migrate --workspace=apps/server",
+    "prisma:seed": "npm run prisma:seed --workspace=apps/server"
+  }
+}
