@@ -190,6 +190,9 @@ export const typeDefs = /* GraphQL */ `
     myDealsAsProcurement(status: DealStatus): [Deal!]!
     dealByQrToken(qrToken: String!): Deal
 
+    users(role: UserRole): [User!]!
+    deals(status: DealStatus, procurementPointId: ID, collectorId: ID): [Deal!]!
+
     fireSafetyTests: [FireSafetyTest!]!
     videoContents: [VideoContent!]!
 

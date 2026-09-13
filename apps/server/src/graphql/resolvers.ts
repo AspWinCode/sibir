@@ -145,6 +145,33 @@ export const resolvers = {
     dealByQrToken: (_: unknown, { qrToken }: { qrToken: string }, ctx: GraphQLContext) =>
       ctx.prisma.deal.findUnique({ where: { qrToken } }),
 
+    users: (_: unknown, { role }: { role?: string }, ctx: GraphQLContext) => {
+      requireRole(ctx, "ADMIN");
+      return ctx.prisma.user.findMany({
+        where: { role: (role as never) ?? undefined },
+        orderBy: { createdAt: "desc" },
+      });
+    },
+    deals: (
+      _: unknown,
+      {
+        status,
+        procurementPointId,
+        collectorId,
+      }: { status?: string; procurementPointId?: string; collectorId?: string },
+      ctx: GraphQLContext,
+    ) => {
+      requireRole(ctx, "ADMIN");
+      return ctx.prisma.deal.findMany({
+        where: {
+          status: (status as never) ?? undefined,
+          procurementPointId: procurementPointId ?? undefined,
+          collectorId: collectorId ?? undefined,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    },
+
     fireSafetyTests: (_: unknown, __: unknown, ctx: GraphQLContext) =>
       ctx.prisma.fireSafetyTest.findMany({ include: { questions: true } }),
     videoContents: (_: unknown, __: unknown, ctx: GraphQLContext) =>
