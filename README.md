@@ -2,6 +2,16 @@
 
 Монорепозиторий: GraphQL backend (Node.js + Prisma + PostgreSQL), админ-панель (React) и PWA для ролей Сборщик/Заготовитель.
 
+## Публичный доступ (тестовый, по IP)
+
+| Что | Адрес |
+|---|---|
+| PWA (Сборщик/Заготовитель) | http://155.212.164.251:8097 |
+| Админ-панель | http://155.212.164.251:8096 |
+| GraphQL API | http://155.212.164.251:8095/graphql |
+
+Без домена и HTTPS — временно, для проверки. Тестовые учётки: администратор `+70000000000` (код авторизации приходит не по SMS, а пишется в лог сервера, пока не подключён SMS-провайдер).
+
 ## Структура
 
 ```
@@ -55,6 +65,10 @@ git push origin main
 /opt/sibir/deploy.sh
 ```
 
-Скрипт делает: `git pull origin main` → `npm install` → `prisma generate` → сборка `apps/server` → `prisma migrate deploy` → перезапуск через `pm2`.
+Скрипт делает: `git pull origin main` → `npm install` → `prisma generate` → сборка `apps/server` → `prisma migrate deploy` → сборка `apps/admin` и `apps/web-app` → перезапуск `apps/server` через `pm2`.
 
 На сервере используется собственная копия Node.js 22 в `/opt/sibir/.nodejs` (чтобы не менять системный Node.js, используемый другими проектами на этом VPS), и изолированный docker-compose-проект `sibir` для PostgreSQL, слушающий только `127.0.0.1:5433`. Доступ к GitHub на сервере — через отдельный deploy key (`/root/.ssh/github_sibir_deploy`, alias `github.com-sibir` в SSH-конфиге).
+
+### Nginx и firewall
+
+Сервер общий (на нём есть и другие проекты), поэтому наружу открыты только три выделенных порта через `ufw`: `8095` (реверс-прокси на `apps/server`, слушающий локально `127.0.0.1:4000`), `8096` (статика `apps/admin/dist`) и `8097` (статика `apps/web-app/dist`). Конфиги — `/etc/nginx/sites-available/sibir-{api,admin,webapp}`. Продакшн `.env` фронтендов (`apps/admin/.env`, `apps/web-app/.env`, не в git) указывают `VITE_GRAPHQL_URL=http://155.212.164.251:8095/graphql`.
