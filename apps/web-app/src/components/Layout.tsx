@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
-const NAV_ITEMS = [
+const COLLECTOR_NAV = [
   { to: "/materials", label: "Сырьё", icon: "🏠" },
   { to: "/map", label: "Карта", icon: "📍" },
   { to: "/stocks", label: "Запасы", icon: "🌿" },
@@ -9,7 +10,18 @@ const NAV_ITEMS = [
   { to: "/profile", label: "Профиль", icon: "👤" },
 ];
 
+const PROCUREMENT_NAV = [
+  { to: "/points", label: "Пункты", icon: "🏬" },
+  { to: "/requests", label: "Заявки", icon: "🔔" },
+  { to: "/accept", label: "Приёмка", icon: "📷" },
+  { to: "/procurement-deals", label: "Сделки", icon: "🧾" },
+  { to: "/profile", label: "Профиль", icon: "👤" },
+];
+
 export function Layout() {
+  const { user } = useAuth();
+  const navItems = user?.role === "PROCUREMENT" ? PROCUREMENT_NAV : COLLECTOR_NAV;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <main style={{ flex: 1, paddingBottom: 72 }}>
@@ -27,7 +39,7 @@ export function Layout() {
           padding: "6px 0",
         }}
       >
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

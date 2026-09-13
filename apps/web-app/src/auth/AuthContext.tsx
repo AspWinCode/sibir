@@ -1,16 +1,25 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { gql } from "../api/client";
 
-interface CollectorUser {
+export interface AppUser {
   id: string;
   name: string;
   phone: string;
   role: "COLLECTOR" | "PROCUREMENT" | "ADMIN";
 }
 
+interface ProcurementRegistration {
+  phone: string;
+  name: string;
+  orgName: string;
+  inn: string;
+  email: string;
+}
+
 interface AuthContextValue {
-  user: CollectorUser | null;
-  register: (phone: string, name: string) => Promise<void>;
+  user: AppUser | null;
+  registerCollector: (phone: string, name: string) => Promise<void>;
+  registerProcurement: (input: ProcurementRegistration) => Promise<void>;
   requestCode: (phone: string) => Promise<void>;
   verifyCode: (phone: string, code: string) => Promise<void>;
   logout: () => void;
@@ -18,9 +27,15 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const REGISTER = /* GraphQL */ `
-  mutation Register($input: RegisterCollectorInput!) {
+const REGISTER_COLLECTOR = /* GraphQL */ `
+  mutation RegisterCollector($input: RegisterCollectorInput!) {
     registerCollector(input: $input)
+  }
+`;
+
+const REGISTER_PROCUREMENT = /* GraphQL */ `
+  mutation RegisterProcurement($input: RegisterProcurementInput!) {
+    registerProcurement(input: $input)
   }
 `;
 
@@ -44,28 +59,31 @@ const VERIFY_CODE = /* GraphQL */ `
   }
 `;
 
-function loadStoredUser(): CollectorUser | null {
+function loadStoredUser(): AppUser | null {
   const raw = localStorage.getItem("sibir_user");
-  return raw ? (JSON.parse(raw) as CollectorUser) : null;
+  return raw ? (JSON.parse(raw) as AppUser) : null;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<CollectorUser | null>(loadStoredUser);
+  const [user, setUser] = useState<AppUser | null>(loadStoredUser);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      register: async (phone, name) => {
-        await gql(REGISTER, { input: { phone, name } });
+      registerCollector: async (phone, name) => {
+        await gql(REGISTER_COLLECTOR, { input: { phone, name } });
+      },
+      registerProcurement: async (input) => {
+        await gql(REGISTER_PROCUREMENT, { input });
       },
       requestCode: async (phone) => {
         await gql(REQUEST_CODE, { phone });
       },
       verifyCode: async (phone, code) => {
-        const data = await gql<{ verifySmsCode: { token: string; user: CollectorUser } }>(
-          VERIFY_CODE,
-          { phone, code },
-        );
+        const data = await gql<{ verifySmsCode: { token: string; user: AppUser } }>(VERIFY_CODE, {
+          phone,
+          code,
+        });
         localStorage.setItem("sibir_token", data.verifySmsCode.token);
         localStorage.setItem("sibir_user", JSON.stringify(data.verifySmsCode.user));
         setUser(data.verifySmsCode.user);
