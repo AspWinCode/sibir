@@ -42,13 +42,19 @@ GraphQL playground: http://localhost:4000/graphql
 
 ## Деплой на VPS
 
-Код доставляется через git push в bare-репозиторий на сервере; post-receive хук сам собирает и перезапускает сервис:
+Источник истины — репозиторий [AspWinCode/sibir](https://github.com/AspWinCode/sibir) на GitHub. Обычный рабочий цикл:
 
 ```bash
-git remote add vps ssh://root@<host>/opt/sibir/repo.git
-git push vps main
+git add -A && git commit -m "..."
+git push origin main
 ```
 
-Хук (`/opt/sibir/repo.git/hooks/post-receive`) выполняет: checkout → `npm install` → сборка `apps/server` → `prisma migrate deploy` → перезапуск через `pm2`.
+Затем на сервере (`/opt/sibir/app` — клон этого репозитория) выполняется:
 
-На сервере используется собственная копия Node.js 22 в `/opt/sibir/.nodejs` (чтобы не менять системный Node.js, используемый другими проектами на этом VPS), и изолированный docker-compose-проект `sibir` для PostgreSQL, слушающий только `127.0.0.1:5433`.
+```bash
+/opt/sibir/deploy.sh
+```
+
+Скрипт делает: `git pull origin main` → `npm install` → `prisma generate` → сборка `apps/server` → `prisma migrate deploy` → перезапуск через `pm2`.
+
+На сервере используется собственная копия Node.js 22 в `/opt/sibir/.nodejs` (чтобы не менять системный Node.js, используемый другими проектами на этом VPS), и изолированный docker-compose-проект `sibir` для PostgreSQL, слушающий только `127.0.0.1:5433`. Доступ к GitHub на сервере — через отдельный deploy key (`/root/.ssh/github_sibir_deploy`, alias `github.com-sibir` в SSH-конфиге).
