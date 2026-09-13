@@ -7,8 +7,14 @@
 
 const SMS_PROVIDER_API_KEY = process.env.SMS_PROVIDER_API_KEY;
 const SMS_PROVIDER_URL = process.env.SMS_PROVIDER_URL;
+const DEV_FALLBACK_CODE = "123456";
 
 export function generateSmsCode(): string {
+  if (!SMS_PROVIDER_API_KEY || !SMS_PROVIDER_URL) {
+    // No SMS provider configured yet: use a fixed demo code so testers can log
+    // in without relaying one-time codes out of the server console each time.
+    return DEV_FALLBACK_CODE;
+  }
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
