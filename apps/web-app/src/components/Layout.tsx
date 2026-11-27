@@ -2,19 +2,24 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 const COLLECTOR_NAV = [
-  { to: "/materials", label: "Сырьё", icon: "🏠" },
+  { to: "/overview", label: "Обзор", icon: "⌂" },
+  { to: "/materials", label: "Сырьё", icon: "♧" },
   { to: "/map", label: "Карта", icon: "📍" },
   { to: "/stocks", label: "Запасы", icon: "🌿" },
   { to: "/offers", label: "Пункты", icon: "🏬" },
   { to: "/deals", label: "Сделки", icon: "🧾" },
+  { to: "/learning", label: "Обучение", icon: "◇" },
   { to: "/profile", label: "Профиль", icon: "👤" },
 ];
 
 const PROCUREMENT_NAV = [
-  { to: "/points", label: "Пункты", icon: "🏬" },
+  { to: "/overview", label: "Обзор", icon: "⌂" },
   { to: "/requests", label: "Заявки", icon: "🔔" },
   { to: "/accept", label: "Приёмка", icon: "📷" },
+  { to: "/points", label: "Пункты", icon: "🏬" },
+  { to: "/plans", label: "Планы", icon: "▤" },
   { to: "/procurement-deals", label: "Сделки", icon: "🧾" },
+  { to: "/learning", label: "Обучение", icon: "◇" },
   { to: "/profile", label: "Профиль", icon: "👤" },
 ];
 
@@ -37,6 +42,8 @@ export function Layout() {
           background: "#fff",
           borderTop: "1px solid #ddd",
           padding: "6px 0",
+          overflowX: "auto",
+          justifyContent: "flex-start",
         }}
       >
         {navItems.map((item) => (
@@ -44,7 +51,8 @@ export function Layout() {
             key={item.to}
             to={item.to}
             style={({ isActive }) => ({
-              flex: 1,
+              minWidth: 72,
+              flex: "0 0 72px",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",

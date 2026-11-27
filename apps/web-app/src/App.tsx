@@ -14,11 +14,15 @@ import { PointsPage } from "./pages/PointsPage";
 import { RequestsPage } from "./pages/RequestsPage";
 import { AcceptDealPage } from "./pages/AcceptDealPage";
 import { ProcurementDealsPage } from "./pages/ProcurementDealsPage";
+import { OverviewPage } from "./pages/OverviewPage";
+import { LearningPage } from "./pages/LearningPage";
+import { PlansPage } from "./pages/PlansPage";
 
 function CollectorRoutes() {
   return (
     <>
-      <Route index element={<Navigate to="/materials" replace />} />
+      <Route index element={<Navigate to="/overview" replace />} />
+      <Route path="/overview" element={<OverviewPage />} />
       <Route path="/materials" element={<MaterialsPage />} />
       <Route path="/materials/:id" element={<MaterialDetailPage />} />
       <Route path="/map" element={<MapPage />} />
@@ -26,7 +30,8 @@ function CollectorRoutes() {
       <Route path="/stocks" element={<StocksPage />} />
       <Route path="/offers" element={<OffersPage />} />
       <Route path="/deals" element={<DealsPage />} />
-      <Route path="*" element={<Navigate to="/materials" replace />} />
+      <Route path="/learning" element={<LearningPage />} />
+      <Route path="*" element={<Navigate to="/overview" replace />} />
     </>
   );
 }
@@ -34,12 +39,15 @@ function CollectorRoutes() {
 function ProcurementRoutes() {
   return (
     <>
-      <Route index element={<Navigate to="/points" replace />} />
+      <Route index element={<Navigate to="/overview" replace />} />
+      <Route path="/overview" element={<OverviewPage />} />
       <Route path="/points" element={<PointsPage />} />
+      <Route path="/plans" element={<PlansPage />} />
       <Route path="/requests" element={<RequestsPage />} />
       <Route path="/accept" element={<AcceptDealPage />} />
       <Route path="/procurement-deals" element={<ProcurementDealsPage />} />
-      <Route path="*" element={<Navigate to="/points" replace />} />
+      <Route path="/learning" element={<LearningPage />} />
+      <Route path="*" element={<Navigate to="/overview" replace />} />
     </>
   );
 }

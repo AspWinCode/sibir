@@ -11,6 +11,9 @@ import { ProcurementOverviewPage } from "./pages/ProcurementOverviewPage";
 import { CollectorOverviewPage } from "./pages/CollectorOverviewPage";
 import { FireSafetyTestsPage } from "./pages/FireSafetyTestsPage";
 import { VideoContentPage } from "./pages/VideoContentPage";
+import { DealsPage } from "./pages/DealsPage";
+import { RegistryPage } from "./pages/RegistryPage";
+import { AccountsPage } from "./pages/AccountsPage";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -40,6 +43,9 @@ function AppRoutes() {
         <Route path="/collectors" element={<CollectorOverviewPage />} />
         <Route path="/fire-safety" element={<FireSafetyTestsPage />} />
         <Route path="/videos" element={<VideoContentPage />} />
+        <Route path="/deals" element={<DealsPage />} />
+        <Route path="/registry" element={<RegistryPage />} />
+        <Route path="/accounts" element={<AccountsPage />} />
       </Route>
     </Routes>
   );

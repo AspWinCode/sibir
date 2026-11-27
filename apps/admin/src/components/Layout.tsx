@@ -10,6 +10,9 @@ const NAV_ITEMS = [
   { to: "/collectors", label: "Сборщики" },
   { to: "/fire-safety", label: "Тест по пожарной безопасности" },
   { to: "/videos", label: "Видео-контент" },
+  { to: "/deals", label: "Сделки" },
+  { to: "/registry", label: "Реестры и журнал" },
+  { to: "/accounts", label: "Учётные записи" },
 ];
 
 export function Layout() {
