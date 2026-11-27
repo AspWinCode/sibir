@@ -1,10 +1,11 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { gql } from "../api/client";
 
 export interface AppUser {
   id: string;
   name: string;
   phone: string;
+  login?: string | null;
   role: "COLLECTOR" | "PROCUREMENT" | "ADMIN";
 }
 
@@ -14,14 +15,15 @@ interface ProcurementRegistration {
   orgName: string;
   inn: string;
   email: string;
+  login: string;
+  password: string;
 }
 
 interface AuthContextValue {
   user: AppUser | null;
-  registerCollector: (phone: string, name: string) => Promise<void>;
+  registerCollector: (input: { phone: string; name: string; login: string; password: string }) => Promise<void>;
+  login: (login: string, password: string) => Promise<void>;
   registerProcurement: (input: ProcurementRegistration) => Promise<void>;
-  requestCode: (phone: string) => Promise<void>;
-  verifyCode: (phone: string, code: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -39,58 +41,59 @@ const REGISTER_PROCUREMENT = /* GraphQL */ `
   }
 `;
 
-const REQUEST_CODE = /* GraphQL */ `
-  mutation RequestCode($phone: String!) {
-    requestSmsCode(input: { phone: $phone })
-  }
-`;
-
-const VERIFY_CODE = /* GraphQL */ `
-  mutation VerifyCode($phone: String!, $code: String!) {
-    verifySmsCode(input: { phone: $phone, code: $code }) {
+const LOGIN = /* GraphQL */ `
+  mutation Login($login: String!, $password: String!) {
+    login(login: $login, password: $password) {
       token
-      user {
-        id
-        name
-        phone
-        role
-      }
+      user { id name phone login role }
     }
   }
 `;
 
+const ME = `query { me { id name phone login role } }`;
+
 function loadStoredUser(): AppUser | null {
-  const raw = localStorage.getItem("sibir_user");
+  const raw = localStorage.getItem("lesovik_user");
   return raw ? (JSON.parse(raw) as AppUser) : null;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(loadStoredUser);
 
+  useEffect(() => {
+    if (!localStorage.getItem("lesovik_token")) return;
+    gql<{ me: AppUser | null }>(ME).then(({ me }) => {
+      if (me) setUser(me);
+      else {
+        localStorage.removeItem("lesovik_token");
+        localStorage.removeItem("lesovik_user");
+        setUser(null);
+      }
+    }).catch(() => {
+      localStorage.removeItem("lesovik_token");
+      localStorage.removeItem("lesovik_user");
+      setUser(null);
+    });
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      registerCollector: async (phone, name) => {
-        await gql(REGISTER_COLLECTOR, { input: { phone, name } });
+      registerCollector: async (input) => {
+        await gql(REGISTER_COLLECTOR, { input });
+      },
+      login: async (login, password) => {
+        const data = await gql<{ login: { token: string; user: AppUser } }>(LOGIN, { login, password });
+        localStorage.setItem("lesovik_token", data.login.token);
+        localStorage.setItem("lesovik_user", JSON.stringify(data.login.user));
+        setUser(data.login.user);
       },
       registerProcurement: async (input) => {
         await gql(REGISTER_PROCUREMENT, { input });
       },
-      requestCode: async (phone) => {
-        await gql(REQUEST_CODE, { phone });
-      },
-      verifyCode: async (phone, code) => {
-        const data = await gql<{ verifySmsCode: { token: string; user: AppUser } }>(VERIFY_CODE, {
-          phone,
-          code,
-        });
-        localStorage.setItem("sibir_token", data.verifySmsCode.token);
-        localStorage.setItem("sibir_user", JSON.stringify(data.verifySmsCode.user));
-        setUser(data.verifySmsCode.user);
-      },
       logout: () => {
-        localStorage.removeItem("sibir_token");
-        localStorage.removeItem("sibir_user");
+        localStorage.removeItem("lesovik_token");
+        localStorage.removeItem("lesovik_user");
         setUser(null);
       },
     }),

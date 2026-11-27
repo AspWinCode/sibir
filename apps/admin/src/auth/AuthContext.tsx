@@ -1,36 +1,31 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { gql } from "../api/client";
 
 interface AdminUser {
   id: string;
   name: string;
   phone: string;
+  login?: string | null;
   role: "COLLECTOR" | "PROCUREMENT" | "ADMIN";
 }
 
 interface AuthContextValue {
   user: AdminUser | null;
-  requestCode: (phone: string) => Promise<void>;
-  verifyCode: (phone: string, code: string) => Promise<void>;
+  login: (login: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const REQUEST_CODE = /* GraphQL */ `
-  mutation RequestCode($phone: String!) {
-    requestSmsCode(input: { phone: $phone })
-  }
-`;
-
-const VERIFY_CODE = /* GraphQL */ `
-  mutation VerifyCode($phone: String!, $code: String!) {
-    verifySmsCode(input: { phone: $phone, code: $code }) {
+const LOGIN = /* GraphQL */ `
+  mutation Login($login: String!, $password: String!) {
+    login(login: $login, password: $password) {
       token
       user {
         id
         name
         phone
+        login
         role
       }
     }
@@ -38,33 +33,44 @@ const VERIFY_CODE = /* GraphQL */ `
 `;
 
 function loadStoredUser(): AdminUser | null {
-  const raw = localStorage.getItem("sibir_admin_user");
+  const raw = localStorage.getItem("lesovik_admin_user");
   return raw ? (JSON.parse(raw) as AdminUser) : null;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(loadStoredUser);
 
+  useEffect(() => {
+    if (!localStorage.getItem("lesovik_admin_token")) return;
+    gql<{ me: AdminUser | null }>("query { me { id name phone login role } }").then(({ me }) => {
+      if (me?.role === "ADMIN") setUser(me);
+      else {
+        localStorage.removeItem("lesovik_admin_token");
+        localStorage.removeItem("lesovik_admin_user");
+        setUser(null);
+      }
+    }).catch(() => {
+      localStorage.removeItem("lesovik_admin_token");
+      localStorage.removeItem("lesovik_admin_user");
+      setUser(null);
+    });
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      requestCode: async (phone) => {
-        await gql(REQUEST_CODE, { phone });
-      },
-      verifyCode: async (phone, code) => {
-        const data = await gql<{
-          verifySmsCode: { token: string; user: AdminUser };
-        }>(VERIFY_CODE, { phone, code });
-        if (data.verifySmsCode.user.role !== "ADMIN") {
+      login: async (login, password) => {
+        const data = await gql<{ login: { token: string; user: AdminUser } }>(LOGIN, { login, password });
+        if (data.login.user.role !== "ADMIN") {
           throw new Error("Доступ только для администратора");
         }
-        localStorage.setItem("sibir_admin_token", data.verifySmsCode.token);
-        localStorage.setItem("sibir_admin_user", JSON.stringify(data.verifySmsCode.user));
-        setUser(data.verifySmsCode.user);
+        localStorage.setItem("lesovik_admin_token", data.login.token);
+        localStorage.setItem("lesovik_admin_user", JSON.stringify(data.login.user));
+        setUser(data.login.user);
       },
       logout: () => {
-        localStorage.removeItem("sibir_admin_token");
-        localStorage.removeItem("sibir_admin_user");
+        localStorage.removeItem("lesovik_admin_token");
+        localStorage.removeItem("lesovik_admin_user");
         setUser(null);
       },
     }),

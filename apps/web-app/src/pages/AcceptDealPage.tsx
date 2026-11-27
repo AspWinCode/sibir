@@ -43,6 +43,16 @@ const COMPLETE = /* GraphQL */ `
   }
 `;
 
+const PURCHASE_ACT = /* GraphQL */ `
+  query PurchaseAct($dealId: ID!) {
+    purchaseAct(dealId: $dealId) {
+      fileName
+      mimeType
+      contentBase64
+    }
+  }
+`;
+
 declare global {
   interface Window {
     BarcodeDetector?: new (options: { formats: string[] }) => {
@@ -82,6 +92,24 @@ export function AcceptDealPage() {
       setCompleted(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка");
+    }
+  };
+
+  const isCompleted = completed || deal?.status === "COMPLETED";
+
+  const downloadAct = async () => {
+    if (!deal) return;
+    try {
+      const data = await gql<{ purchaseAct: { fileName: string; mimeType: string; contentBase64: string } }>(PURCHASE_ACT, { dealId: deal.id });
+      const bytes = Uint8Array.from(atob(data.purchaseAct.contentBase64), (char) => char.charCodeAt(0));
+      const url = URL.createObjectURL(new Blob([bytes], { type: data.purchaseAct.mimeType }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = data.purchaseAct.fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Не удалось скачать акт");
     }
   };
 
@@ -166,7 +194,7 @@ export function AcceptDealPage() {
 
       {error && <p style={{ color: "crimson", fontSize: 13 }}>{error}</p>}
 
-      {deal && !completed && (
+      {deal && !isCompleted && (
         <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: 12, marginTop: 12 }}>
           <div style={{ fontWeight: 600 }}>
             #{deal.number} {deal.rawMaterial.name} · {deal.quantityKg} кг
@@ -184,9 +212,12 @@ export function AcceptDealPage() {
         </div>
       )}
 
-      {completed && (
+      {deal && isCompleted && (
         <div style={{ background: "#eaf7ea", border: "1px solid #bfe3bf", borderRadius: 10, padding: 12, marginTop: 12 }}>
           Сделка успешно оформлена ✓
+          <button onClick={downloadAct} style={{ ...primaryButtonStyle, marginTop: 10 }}>
+            Скачать закупочный акт PDF
+          </button>
         </div>
       )}
     </div>

@@ -12,5 +12,11 @@
     "prisma:generate": "npm run prisma:generate --workspace=apps/server",
     "prisma:migrate": "npm run prisma:migrate --workspace=apps/server",
     "prisma:seed": "npm run prisma:seed --workspace=apps/server"
+  },
+  "allowScripts": {
+    "@prisma/client@5.22.0": true,
+    "@prisma/engines@5.22.0": true,
+    "esbuild@0.28.2": true,
+    "prisma@5.22.0": true
   }
 }

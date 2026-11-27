@@ -46,7 +46,7 @@ export function StocksPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <strong>{s.quantityKg} кг</strong>
               <button
-                onClick={() => navigate(`/offers?materialId=${s.rawMaterial.id}`)}
+                onClick={() => navigate(`/offers?materialId=${s.rawMaterial.id}&stockId=${s.id}`)}
                 style={{ background: "#3a5a3a", color: "#fff", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer" }}
               >
                 Сдать

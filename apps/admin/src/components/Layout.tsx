@@ -18,7 +18,7 @@ export function Layout() {
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
       <aside style={{ width: 240, background: "#1f2a1f", color: "#fff", padding: 16 }}>
-        <h1 style={{ fontSize: 18, marginBottom: 24 }}>Сибирь · Админ</h1>
+        <h1 style={{ fontSize: 18, marginBottom: 24 }}>Лесовик · Админ</h1>
         <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {NAV_ITEMS.map((item) => (
             <NavLink

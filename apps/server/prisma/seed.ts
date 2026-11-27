@@ -1,12 +1,16 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  const adminPasswordHash = await bcrypt.hash("Admin123!", 12);
+  const procurementPasswordHash = await bcrypt.hash("Ivanov123!", 12);
+  const collectorPasswordHash = await bcrypt.hash("Collector123!", 12);
   const admin = await prisma.user.upsert({
     where: { phone: "+70000000000" },
-    update: {},
-    create: { phone: "+70000000000", name: "Администратор", role: "ADMIN" },
+    update: { login: "admin", passwordHash: adminPasswordHash },
+    create: { phone: "+70000000000", login: "admin", passwordHash: adminPasswordHash, name: "Администратор", role: "ADMIN" },
   });
 
   const blueberry = await prisma.rawMaterial.upsert({
@@ -64,15 +68,23 @@ async function main() {
 
   const procurement = await prisma.user.upsert({
     where: { phone: "+79021882222" },
-    update: {},
+    update: { login: "ivanov", passwordHash: procurementPasswordHash },
     create: {
       phone: "+79021882222",
+      login: "ivanov",
+      passwordHash: procurementPasswordHash,
       name: "Иванов ИП",
       role: "PROCUREMENT",
       orgName: 'ИП Иванов',
       inn: "381100000000",
       email: "ivanov@example.com",
     },
+  });
+
+  await prisma.user.upsert({
+    where: { phone: "+70000000001" },
+    update: { login: "collector", passwordHash: collectorPasswordHash },
+    create: { phone: "+70000000001", login: "collector", passwordHash: collectorPasswordHash, name: "Тестовый сборщик", role: "COLLECTOR" },
   });
 
   const point = await prisma.procurementPoint.create({

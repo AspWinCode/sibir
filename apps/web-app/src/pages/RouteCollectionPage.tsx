@@ -34,7 +34,7 @@ export function RouteCollectionPage() {
     setError(null);
     setSaving(true);
     try {
-      await gql(ADD_STOCK, {
+      const data = await gql<{ addStock: { id: string } }>(ADD_STOCK, {
         input: {
           rawMaterialId: materialId,
           quantityKg: Number(quantity),
@@ -42,7 +42,7 @@ export function RouteCollectionPage() {
           fieldLongitude: position?.longitude,
         },
       });
-      navigate(`/offers?materialId=${materialId}`);
+      navigate(`/offers?materialId=${materialId}&stockId=${data.addStock.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка");
     } finally {

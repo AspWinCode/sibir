@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: sibir
       POSTGRES_DB: sibir
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - sibir_pg_data:/var/lib/postgresql/data
 

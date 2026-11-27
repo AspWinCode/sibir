@@ -28,6 +28,7 @@ export const typeDefs = /* GraphQL */ `
   type User {
     id: ID!
     phone: String!
+    login: String
     role: UserRole!
     name: String!
     orgName: String
@@ -165,6 +166,12 @@ export const typeDefs = /* GraphQL */ `
     distanceKm: Float
   }
 
+  type PurchaseAct {
+    fileName: String!
+    mimeType: String!
+    contentBase64: String!
+  }
+
   type Query {
     me: User
 
@@ -189,6 +196,7 @@ export const typeDefs = /* GraphQL */ `
     myDealsAsCollector(status: DealStatus): [Deal!]!
     myDealsAsProcurement(status: DealStatus): [Deal!]!
     dealByQrToken(qrToken: String!): Deal
+    purchaseAct(dealId: ID!): PurchaseAct!
 
     users(role: UserRole): [User!]!
     deals(status: DealStatus, procurementPointId: ID, collectorId: ID): [Deal!]!
@@ -202,6 +210,8 @@ export const typeDefs = /* GraphQL */ `
   input RegisterCollectorInput {
     phone: String!
     name: String!
+    login: String!
+    password: String!
   }
 
   input RegisterProcurementInput {
@@ -210,6 +220,8 @@ export const typeDefs = /* GraphQL */ `
     orgName: String!
     inn: String!
     email: String!
+    login: String!
+    password: String!
   }
 
   input RequestSmsCodeInput {
@@ -284,6 +296,7 @@ export const typeDefs = /* GraphQL */ `
   input CreateDealInput {
     procurementPointId: ID!
     rawMaterialId: ID!
+    purchasePlanId: ID!
     stockId: ID
     quantityKg: Float!
     pricePerKg: Float!
@@ -310,6 +323,7 @@ export const typeDefs = /* GraphQL */ `
   type Mutation {
     requestSmsCode(input: RequestSmsCodeInput!): Boolean!
     registerCollector(input: RegisterCollectorInput!): Boolean!
+    login(login: String!, password: String!): AuthPayload!
     registerProcurement(input: RegisterProcurementInput!): Boolean!
     verifySmsCode(input: VerifySmsCodeInput!): AuthPayload!
 

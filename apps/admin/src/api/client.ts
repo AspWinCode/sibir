@@ -6,7 +6,7 @@ export async function gql<T>(
   query: string,
   variables?: Record<string, unknown>,
 ): Promise<T> {
-  const token = localStorage.getItem("sibir_admin_token");
+  const token = localStorage.getItem("lesovik_admin_token");
   const response = await fetch(GRAPHQL_URL, {
     method: "POST",
     headers: {

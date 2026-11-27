@@ -5,6 +5,8 @@ import { generateSmsCode, sendSmsCode } from "../lib/sms.js";
 import { signAuthToken } from "../lib/auth.js";
 import { suggestAddress } from "../lib/dadata.js";
 import { getPaymentProvider } from "../lib/payment.js";
+import bcrypt from "bcryptjs";
+import { createPurchaseActPdf } from "../lib/purchaseAct.js";
 
 const DateTimeScalar = new GraphQLScalarType({
   name: "DateTime",
@@ -144,6 +146,35 @@ export const resolvers = {
     },
     dealByQrToken: (_: unknown, { qrToken }: { qrToken: string }, ctx: GraphQLContext) =>
       ctx.prisma.deal.findUnique({ where: { qrToken } }),
+    purchaseAct: async (_: unknown, { dealId }: { dealId: string }, ctx: GraphQLContext) => {
+      const user = requireRole(ctx, "PROCUREMENT");
+      const deal = await ctx.prisma.deal.findUnique({
+        where: { id: dealId },
+        include: { collector: true, procurementPoint: { include: { owner: true } }, rawMaterial: true },
+      });
+      if (!deal || deal.procurementPoint.ownerId !== user.id) {
+        throw new AuthError("Сделка не найдена или не принадлежит вашему пункту");
+      }
+      if (deal.status !== "COMPLETED") throw new Error("Акт доступен после завершения приёмки");
+      const content = await createPurchaseActPdf({
+        number: deal.number,
+        date: deal.completedAt ?? deal.updatedAt,
+        buyer: deal.procurementPoint.owner.orgName ?? deal.procurementPoint.name,
+        buyerAddress: deal.procurementPoint.address,
+        buyerInn: deal.procurementPoint.owner.inn,
+        seller: deal.collector.name,
+        sellerPhone: deal.collector.phone,
+        material: deal.rawMaterial.name,
+        quantityKg: deal.quantityKg,
+        pricePerKg: deal.pricePerKg,
+        amount: deal.amount,
+      });
+      return {
+        fileName: `zakupochnyi-akt-${deal.number}.pdf`,
+        mimeType: "application/pdf",
+        contentBase64: content.toString("base64"),
+      };
+    },
 
     users: (_: unknown, { role }: { role?: string }, ctx: GraphQLContext) => {
       requireRole(ctx, "ADMIN");
@@ -195,24 +226,42 @@ export const resolvers = {
 
     registerCollector: async (
       _: unknown,
-      { input }: { input: { phone: string; name: string } },
+      { input }: { input: { phone: string; name: string; login: string; password: string } },
       ctx: GraphQLContext,
     ) => {
+      if (input.password.length < 6) throw new Error("Пароль должен содержать минимум 6 символов");
+      const passwordHash = await bcrypt.hash(input.password, 12);
       await ctx.prisma.user.upsert({
         where: { phone: input.phone },
-        update: { name: input.name, role: "COLLECTOR" },
-        create: { phone: input.phone, name: input.name, role: "COLLECTOR" },
+        update: { name: input.name, login: input.login, passwordHash, role: "COLLECTOR" },
+        create: { phone: input.phone, name: input.name, login: input.login, passwordHash, role: "COLLECTOR" },
       });
       return true;
+    },
+
+    login: async (
+      _: unknown,
+      { login, password }: { login: string; password: string },
+      ctx: GraphQLContext,
+    ) => {
+      const user = await ctx.prisma.user.findUnique({ where: { login } });
+      if (!user || !user.passwordHash) {
+        throw new AuthError("Неверный логин или пароль");
+      }
+      const valid = await bcrypt.compare(password, user.passwordHash);
+      if (!valid) throw new AuthError("Неверный логин или пароль");
+      return { token: signAuthToken(user), user };
     },
 
     registerProcurement: async (
       _: unknown,
       {
         input,
-      }: { input: { phone: string; name: string; orgName: string; inn: string; email: string } },
+      }: { input: { phone: string; name: string; orgName: string; inn: string; email: string; login: string; password: string } },
       ctx: GraphQLContext,
     ) => {
+      if (input.password.length < 6) throw new Error("Пароль должен содержать минимум 6 символов");
+      const passwordHash = await bcrypt.hash(input.password, 12);
       await ctx.prisma.user.upsert({
         where: { phone: input.phone },
         update: {
@@ -220,6 +269,8 @@ export const resolvers = {
           orgName: input.orgName,
           inn: input.inn,
           email: input.email,
+          login: input.login,
+          passwordHash,
           role: "PROCUREMENT",
         },
         create: {
@@ -228,6 +279,8 @@ export const resolvers = {
           orgName: input.orgName,
           inn: input.inn,
           email: input.email,
+          login: input.login,
+          passwordHash,
           role: "PROCUREMENT",
         },
       });
@@ -402,6 +455,7 @@ export const resolvers = {
         input: {
           procurementPointId: string;
           rawMaterialId: string;
+          purchasePlanId: string;
           stockId?: string;
           quantityKg: number;
           pricePerKg: number;
@@ -410,23 +464,40 @@ export const resolvers = {
       ctx: GraphQLContext,
     ) => {
       const user = requireRole(ctx, "COLLECTOR");
+      const point = await ctx.prisma.procurementPoint.findUnique({ where: { id: input.procurementPointId } });
+      if (!point) throw new Error("Пункт приёма не найден");
+      const plan = await ctx.prisma.purchasePlan.findFirst({
+        where: { id: input.purchasePlanId, procurementPointId: input.procurementPointId, rawMaterialId: input.rawMaterialId },
+      });
+      if (!plan) throw new Error("Предложение по этому сырью больше недоступно");
+      const stock = input.stockId
+        ? await ctx.prisma.stock.findFirst({ where: { id: input.stockId, collectorId: user.id, rawMaterialId: input.rawMaterialId } })
+        : null;
+      if (input.stockId && !stock) throw new AuthError("Запас не найден или вам не принадлежит");
+      if (input.stockId && stock && input.quantityKg > stock.quantityKg) {
+        throw new Error("Нельзя сдать больше, чем есть в запасе");
+      }
       return ctx.prisma.deal.create({
         data: {
           ...input,
           collectorId: user.id,
-          amount: input.quantityKg * input.pricePerKg,
+          pricePerKg: plan.pricePerKg,
+          amount: input.quantityKg * plan.pricePerKg,
+          stockId: input.stockId,
         },
       });
     },
 
     acceptDeal: async (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
       const user = requireRole(ctx, "PROCUREMENT");
-      await assertOwnsDeal(ctx, id, user.id);
+      const deal = await assertOwnsDeal(ctx, id, user.id);
+      if (deal.status !== "PENDING") throw new Error("Заявка уже обработана");
       return ctx.prisma.deal.update({ where: { id }, data: { status: "ACCEPTED" } });
     },
     rejectDeal: async (_: unknown, { id }: { id: string }, ctx: GraphQLContext) => {
       const user = requireRole(ctx, "PROCUREMENT");
-      await assertOwnsDeal(ctx, id, user.id);
+      const deal = await assertOwnsDeal(ctx, id, user.id);
+      if (deal.status !== "PENDING") throw new Error("Заявка уже обработана");
       return ctx.prisma.deal.update({ where: { id }, data: { status: "REJECTED" } });
     },
     completeDealByQr: async (
@@ -442,8 +513,11 @@ export const resolvers = {
       if (!deal || deal.procurementPoint.ownerId !== user.id) {
         throw new AuthError("Сделка не найдена или не принадлежит вашему пункту");
       }
+      if (deal.status !== "ACCEPTED") {
+        throw new Error("Сначала заготовитель должен принять заявку");
+      }
       const payment = await getPaymentProvider().charge(deal.id, deal.amount);
-      return ctx.prisma.deal.update({
+      const updated = await ctx.prisma.deal.update({
         where: { id: deal.id },
         data: {
           status: "COMPLETED",
@@ -451,6 +525,15 @@ export const resolvers = {
           completedAt: payment.paidAt,
         },
       });
+      if (updated.stockId) {
+        const stock = await ctx.prisma.stock.findUnique({ where: { id: updated.stockId } });
+        if (stock && stock.quantityKg <= updated.quantityKg) {
+          await ctx.prisma.stock.delete({ where: { id: stock.id } });
+        } else if (stock) {
+          await ctx.prisma.stock.update({ where: { id: stock.id }, data: { quantityKg: { decrement: updated.quantityKg } } });
+        }
+      }
+      return updated;
     },
 
     createFireSafetyTest: (_: unknown, { input }: { input: Record<string, unknown> }, ctx: GraphQLContext) => {
@@ -585,4 +668,5 @@ async function assertOwnsDeal(ctx: GraphQLContext, dealId: string, ownerId: stri
     include: { procurementPoint: true },
   });
   if (deal.procurementPoint.ownerId !== ownerId) throw new AuthError("Сделка вам не принадлежит");
+  return deal;
 }

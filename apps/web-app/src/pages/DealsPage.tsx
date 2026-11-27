@@ -16,7 +16,8 @@ interface Deal {
 }
 
 const TABS: { value: Deal["status"]; label: string }[] = [
-  { value: "PENDING", label: "В процессе" },
+  { value: "PENDING", label: "Ожидают" },
+  { value: "ACCEPTED", label: "Принятые" },
   { value: "COMPLETED", label: "Завершённые" },
   { value: "REJECTED", label: "Отклонённые" },
 ];

@@ -14,11 +14,13 @@
   },
   "dependencies": {
     "@prisma/client": "^5.19.1",
+    "@types/pdfkit": "^0.17.7",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
     "graphql": "^16.9.0",
     "graphql-yoga": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
+    "pdfkit": "^0.21.0",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {

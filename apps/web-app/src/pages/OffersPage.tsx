@@ -67,6 +67,7 @@ const CREATE_DEAL = /* GraphQL */ `
 export function OffersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const materialId = searchParams.get("materialId") ?? "";
+  const stockId = searchParams.get("stockId") ?? undefined;
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [offers, setOffers] = useState<Offer[] | null>(null);
   const [sortBy, setSortBy] = useState<"distance" | "price">("distance");
@@ -155,6 +156,7 @@ export function OffersPage() {
         <CreateDealModal
           offer={dealTarget}
           rawMaterialId={materialId}
+          stockId={stockId}
           onClose={() => setDealTarget(null)}
         />
       )}
@@ -178,10 +180,12 @@ function sortButtonStyle(active: boolean) {
 function CreateDealModal({
   offer,
   rawMaterialId,
+  stockId,
   onClose,
 }: {
   offer: Offer;
   rawMaterialId: string;
+  stockId?: string;
   onClose: () => void;
 }) {
   const [quantity, setQuantity] = useState("");
@@ -195,6 +199,8 @@ function CreateDealModal({
         input: {
           procurementPointId: offer.procurementPoint.id,
           rawMaterialId,
+          purchasePlanId: offer.purchasePlan.id,
+          ...(stockId ? { stockId } : {}),
           quantityKg: Number(quantity),
           pricePerKg: offer.purchasePlan.pricePerKg,
         },
