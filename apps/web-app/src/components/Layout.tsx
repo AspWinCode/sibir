@@ -28,11 +28,12 @@ export function Layout() {
   const navItems = user?.role === "PROCUREMENT" ? PROCUREMENT_NAV : COLLECTOR_NAV;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div className="app-shell" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <main style={{ flex: 1, paddingBottom: 72 }}>
         <Outlet />
       </main>
       <nav
+        className="bottom-nav"
         style={{
           position: "fixed",
           bottom: 0,
@@ -49,6 +50,7 @@ export function Layout() {
         {navItems.map((item) => (
           <NavLink
             key={item.to}
+            className="nav-item"
             to={item.to}
             style={({ isActive }) => ({
               minWidth: 72,

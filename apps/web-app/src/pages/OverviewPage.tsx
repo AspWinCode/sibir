@@ -22,31 +22,16 @@ export function OverviewPage() {
   const isProcurement = user?.role === "PROCUREMENT";
   const links = isProcurement ? procurementLinks : collectorLinks;
 
-  return (
-    <div style={{ padding: 16 }}>
-      <h1 style={{ margin: "0 0 4px", color: "#2c3e2c", fontSize: 22 }}>Обзор</h1>
-      <p style={{ margin: "0 0 18px", color: "#666", fontSize: 14 }}>
-        {user?.name}, рабочее пространство Лесовика
-      </p>
-      <div style={{ display: "grid", gap: 12 }}>
-        {links.map(([to, title, description]) => (
-          <Link key={to} to={to} style={cardStyle}>
-            <strong>{title}</strong>
-            <span>{description}</span>
-          </Link>
-        ))}
-      </div>
+  return <div className="page-shell">
+    <section className="hero-card">
+      <div className="eyebrow">Лесовик · рабочее пространство</div>
+      <h1>Добро пожаловать, {user?.name?.split(" ")[0] || "друг"}</h1>
+      <p>{isProcurement ? "Принимайте дикоросы, управляйте планами закупа и закрывайте сделки." : "Собирайте осознанно, сдавайте прозрачно и контролируйте каждую сделку."}</p>
+      <div className="hero-chips"><span className="hero-chip">● Онлайн</span><span className="hero-chip">{isProcurement ? "Кабинет заготовителя" : "Кабинет сборщика"}</span></div>
+    </section>
+    <div className="section-heading"><h2>Быстрый доступ</h2><span>Все разделы рядом</span></div>
+    <div className="shortcut-grid">
+      {links.map(([to, title, description], index) => <Link key={to} to={to} className="shortcut-card"><span className="shortcut-icon">{["⌂", "♧", "⌖", "▤", "≋"][index % 5]}</span><strong>{title}</strong><span>{description}</span></Link>)}
     </div>
-  );
+  </div>;
 }
-
-const cardStyle = {
-  display: "grid",
-  gap: 5,
-  padding: 14,
-  border: "1px solid #e2e2e2",
-  borderRadius: 12,
-  background: "#fff",
-  color: "#263526",
-  textDecoration: "none",
-};
