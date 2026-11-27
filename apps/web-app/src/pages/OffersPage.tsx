@@ -105,8 +105,8 @@ export function OffersPage() {
   }, [offers, sortBy, position]);
 
   return (
-    <div style={{ padding: 16 }}>
-      <h1 style={{ fontSize: 20, color: "#2c3e2c" }}>Пункты приёма</h1>
+    <div className="page-shell">
+      <div className="section-heading" style={{ marginTop: 0 }}><h1 style={{ fontSize: 22, margin: 0 }}>Витрина пунктов</h1><span>{sortedOffers.length} найдено</span></div>
 
       <select
         value={materialId}
@@ -132,21 +132,21 @@ export function OffersPage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gap: 10 }}>
+      <div className="showcase-grid">
         {sortedOffers.map((o) => (
-          <div key={o.purchasePlan.id} style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: 12 }}>
-            <div style={{ fontWeight: 600 }}>{o.procurementPoint.name}</div>
-            <div style={{ fontSize: 12, color: "#888" }}>
+          <div key={o.purchasePlan.id} className="showcase-card" style={{ cursor: "default" }}>
+            <div className="showcase-image">🏬</div><div className="showcase-body"><strong>{o.procurementPoint.name}</strong>
+            <span>
               {o.procurementPoint.address} · {o.procurementPoint.region.name}
               {o.distanceKm != null ? ` · ${o.distanceKm.toFixed(1)} км` : ""}
-            </div>
-            <div style={{ fontSize: 12, color: "#888" }}>Часы работы: {o.procurementPoint.workingHours}</div>
+            </span>
+            <span>Часы работы: {o.procurementPoint.workingHours}</span>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
               <strong>{o.purchasePlan.pricePerKg} ₽/кг</strong>
               <button onClick={() => setDealTarget(o)} style={{ background: "#3a5a3a", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", cursor: "pointer" }}>
                 Сдать сюда
               </button>
-            </div>
+            </div></div>
           </div>
         ))}
         {materialId && offers && sortedOffers.length === 0 && <p style={{ color: "#888" }}>Предложений пока нет</p>}

@@ -70,18 +70,17 @@ export function RequestsPage() {
   if (!deals) return <p style={{ padding: 16 }}>Загрузка…</p>;
 
   return (
-    <div style={{ padding: 16 }}>
-      <h1 style={{ fontSize: 20, color: "#2c3e2c" }}>Новые заявки</h1>
+    <div className="page-shell">
+      <div className="section-heading" style={{ marginTop: 0 }}><h1 style={{ fontSize: 22, margin: 0 }}>Новые заявки</h1><span>{deals.length} ожидают</span></div>
       {deals.length === 0 && <p style={{ color: "#888" }}>Заявок пока нет</p>}
-      <div style={{ display: "grid", gap: 10 }}>
+      <div className="showcase-grid">
         {deals.map((d) => (
-          <div key={d.id} style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: 12 }}>
-            <div style={{ fontWeight: 600 }}>
+          <div key={d.id} className="showcase-card" style={{ cursor: "default" }}>
+            <div className="showcase-image">📦</div><div className="showcase-body"><strong>
               {d.rawMaterial.name} · {d.quantityKg} кг
-            </div>
-            <div style={{ fontSize: 12, color: "#888" }}>
+            </strong><span>
               От {d.collector.name} ({d.collector.phone}) · {d.pricePerKg} ₽/кг · сумма {d.amount} ₽
-            </div>
+            </span>
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <button onClick={() => accept(d.id)} style={{ flex: 1, background: "#3a5a3a", color: "#fff", border: "none", borderRadius: 8, padding: "8px 0", cursor: "pointer" }}>
                 Принять
@@ -89,7 +88,7 @@ export function RequestsPage() {
               <button onClick={() => reject(d.id)} style={{ flex: 1, background: "#eee", border: "none", borderRadius: 8, padding: "8px 0", cursor: "pointer" }}>
                 Отклонить
               </button>
-            </div>
+            </div></div>
           </div>
         ))}
       </div>
