@@ -1,4 +1,4 @@
-const GRAPHQL_URL = import.meta.env.VITE_GRAPHQL_URL ?? "http://localhost:4000/graphql";
+const GRAPHQL_URL = import.meta.env.VITE_GRAPHQL_URL ?? "/graphql";
 
 export class GraphQLError extends Error {}
 
