@@ -7,6 +7,7 @@ export function AuthPage() {
   const { registerCollector, registerProcurement, login: loginAccount } = useAuth();
   const [role, setRole] = useState<Role>("COLLECTOR");
   const [collectorMode, setCollectorMode] = useState<"login" | "register">("login");
+  const [procurementMode, setProcurementMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [orgName, setOrgName] = useState("");
   const [inn, setInn] = useState("");
@@ -29,9 +30,13 @@ export function AuthPage() {
         }
         await registerCollector({ phone, name, login, password });
       } else {
+        if (procurementMode === "login") {
+          await loginAccount(login, password);
+          return;
+        }
         await registerProcurement({ phone, name, orgName, inn, email, login, password });
       }
-      if (collectorMode === "register" || role === "PROCUREMENT") await loginAccount(login, password);
+      if (collectorMode === "register" || procurementMode === "register") await loginAccount(login, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка");
     } finally {
@@ -60,10 +65,10 @@ export function AuthPage() {
           </div>
         )}
 
-        {role === "COLLECTOR" && (
+        {(role === "COLLECTOR" || role === "PROCUREMENT") && (
           <div style={{ display: "flex", gap: 6 }}>
-            <button type="button" onClick={() => setCollectorMode("login")} style={roleTabStyle(collectorMode === "login")}>Войти</button>
-            <button type="button" onClick={() => setCollectorMode("register")} style={roleTabStyle(collectorMode === "register")}>Регистрация</button>
+            <button type="button" onClick={() => role === "COLLECTOR" ? setCollectorMode("login") : setProcurementMode("login")} style={roleTabStyle(role === "COLLECTOR" ? collectorMode === "login" : procurementMode === "login")}>Войти</button>
+            <button type="button" onClick={() => role === "COLLECTOR" ? setCollectorMode("register") : setProcurementMode("register")} style={roleTabStyle(role === "COLLECTOR" ? collectorMode === "register" : procurementMode === "register")}>Регистрация</button>
           </div>
         )}
 
@@ -78,36 +83,26 @@ export function AuthPage() {
                   <label style={fieldStyle}>Номер телефона<input value={phone} onChange={(e) => setPhone(e.target.value)} required /></label>
                 </>}
               </>
-            ) : <label style={fieldStyle}>Имя контактного лица<input value={name} onChange={(e) => setName(e.target.value)} required /></label>}
-            {role === "PROCUREMENT" && (
+            ) : (
               <>
                 <label style={fieldStyle}>Логин<input value={login} onChange={(e) => setLogin(e.target.value)} required /></label>
                 <label style={fieldStyle}>Пароль<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
-                <label style={fieldStyle}>
-                  Название организации / ИП
-                  <input value={orgName} onChange={(e) => setOrgName(e.target.value)} required />
-                </label>
-                <label style={fieldStyle}>
-                  ИНН
-                  <input value={inn} onChange={(e) => setInn(e.target.value)} required />
-                </label>
-                <label style={fieldStyle}>
-                  Email
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </label>
+                {procurementMode === "register" && <>
+                  <label style={fieldStyle}>Имя контактного лица<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
+                  <label style={fieldStyle}>Название организации / ИП<input value={orgName} onChange={(e) => setOrgName(e.target.value)} required /></label>
+                  <label style={fieldStyle}>ИНН<input value={inn} onChange={(e) => setInn(e.target.value)} required /></label>
+                  <label style={fieldStyle}>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+                  <label style={fieldStyle}>Номер телефона<input value={phone} onChange={(e) => setPhone(e.target.value)} required /></label>
+                </>}
               </>
             )}
-            {role === "PROCUREMENT" && <label style={fieldStyle}>
-              Номер телефона
-              <input value={phone} onChange={(e) => setPhone(e.target.value)} required />
-            </label>}
           </>
         }
 
         {error && <p style={{ color: "crimson", fontSize: 13, margin: 0 }}>{error}</p>}
 
         <button type="submit" disabled={loading} style={buttonStyle}>
-          {role === "COLLECTOR" ? (collectorMode === "login" ? "Войти" : "Создать аккаунт") : "Войти"}
+          {role === "COLLECTOR" ? (collectorMode === "login" ? "Войти" : "Создать аккаунт") : (procurementMode === "login" ? "Войти" : "Создать аккаунт")}
         </button>
       </form>
     </div>
